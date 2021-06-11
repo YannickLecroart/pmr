@@ -4,8 +4,11 @@ import pandas as pd
 from pandas.tseries.holiday import AbstractHolidayCalendar, Holiday, EasterMonday, Easter
 from pandas.tseries.offsets import Day, CustomBusinessDay
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, plot_roc_curve
+from sklearn.inspection import permutation_importance
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
+import shap
+import time
 
 
 df = pd.read_excel("parking_data_full.xlsx", index_col=0)
@@ -17,6 +20,11 @@ df = df[~df.index.duplicated()]
 df = df.asfreq(('15min'))
 
 df = df.fillna(method='ffill')
+
+
+#######################################
+######## FEATURE ENGINEERING #########
+#######################################
 
 
 class FrenchJoursFeries(AbstractHolidayCalendar):
@@ -86,11 +94,15 @@ def create_features(df, label=None):#input/output features pour algo
         return X
 
 
+##################################
+########## MODELLING #############
+##################################
+
 X, y = create_features(df, label='presence') 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-model = RandomForestClassifier(n_estimators = 1000, max_depth=4, verbose=0)
+model = RandomForestClassifier(n_estimators = 1000, max_depth=10, verbose=0)
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
@@ -101,7 +113,11 @@ accuracy = round(accuracy * 100, 1)
 with open('accuracy_score.txt', 'w') as f:
     f.write(str(accuracy))
 
-# Confusion Matrix and plot
+##################################
+#### Confusion Matrix and plot ###
+##################################
+
+
 cm = confusion_matrix(y_test, model.predict(X_test))
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.imshow(cm)
@@ -124,4 +140,28 @@ with open('classification_report.txt', 'w') as f:
 model_ROC = plot_roc_curve(model, X_test, y_test)
 plt.tight_layout()
 plt.savefig("roc.png",dpi=120) 
+plt.close()
+
+
+#######################################
+#### EXPLAINABLE AI (XAI) WITH SHAP ###
+#######################################
+
+start_time = time.time()
+result = permutation_importance(
+    model, X_test, y_test, n_repeats=10, random_state=42, n_jobs=2)
+elapsed_time = time.time() - start_time
+print(f"Elapsed time to compute feature importances: "
+      f"{elapsed_time:.3f} seconds")
+
+feature_names = ['heure', 'jour_semaine', 'minute','trimestre','mois','annee','jour_annee', 'jour_mois', 'semaine','saison', 'jour_ferie', 'plage_horaire']
+
+forest_importances = pd.Series(result.importances_mean, index=feature_names)
+
+fig, ax = plt.subplots()
+forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
+ax.set_title("Feature importances using permutation on full model")
+ax.set_ylabel("Mean accuracy decrease")
+fig.tight_layout()
+plt.savefig("feature_importances.png",dpi=120) 
 plt.close()
