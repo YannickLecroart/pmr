@@ -7,7 +7,6 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.inspection import permutation_importance
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-import shap
 import time
 
 
