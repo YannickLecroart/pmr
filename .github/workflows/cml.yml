@@ -1,0 +1,26 @@
+name: model-CHD
+on: [push]
+jobs:
+  run:
+    runs-on: [ubuntu-latest]
+    container: docker://dvcorg/cml-py3:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: 'Train and test PMR RF Model'
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          # ML workflow
+          pip install -r requirements.txt
+          python train.py
+          
+          echo "## Model Metrics" >> report.md
+          cat accuracy_score.txt >> report.md
+          cat classification_report.txt >> report.md
+
+          # Write CML report
+          echo "## Model Visualization" >> report.md 
+          cml-publish cm.png --md >> report.md
+          cml-publish roc.png --md >> report.md
+          cml-send-comment report.md
