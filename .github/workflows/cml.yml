@@ -23,4 +23,5 @@ jobs:
           echo "## Model Visualization" >> report.md 
           cml-publish cm.png --md >> report.md
           cml-publish roc.png --md >> report.md
+          cml-publish feature_importances.png --md >> report.md
           cml-send-comment report.md
