@@ -90,7 +90,7 @@ X, y = create_features(df, label='presence')
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-model = RandomForestClassifier(n_estimators = 1000, max_depth=10, verbose=0)
+model = RandomForestClassifier(n_estimators = 1000, max_depth=4, verbose=0)
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
